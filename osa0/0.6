@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Browser
+    participant Server
+
+    %% Käyttäjä täyttää lomakkeen ja submit estetään JS:llä
+    Browser->>Browser: form.onsubmit (e.preventDefault())
+    %% JS lisää muistiinpanon paikalliseen taulukkoon ja renderöi sen
+    Browser->>Browser: notes.push(note)  
+    Note right of Browser: uudelleenpiirto redrawNotes()
+
+    %% AJAX POST, JSON-muodossa
+    Browser->>Server: POST /new_note_spa\nContent-Type: application/json\n{"content":"uusi muistiinpano","date":"…"}
+    activate Server
+    %% Server tallentaa muistiinpanon muistiin
+    Server-->>Server: notes.push(req.body)
+    %% Server vastaa ilman uudelleenohjausta
+    Server-->>Browser: 201 Created
+    deactivate Server
+
+    Note right of Browser: selain ei lataa sivua uudelleen
