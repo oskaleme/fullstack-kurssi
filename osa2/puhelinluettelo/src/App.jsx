@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
-
+import personsService from './services/persons'
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
@@ -11,28 +10,69 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
+  // 2.11
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        setPersons(response.data)
+    personsService
+      .getAll()
+      .then(initialPersons => {
+        setPersons(initialPersons)
       })
   }, [])
 
-  const addPerson = (e) => {
-    e.preventDefault()
-    if (persons.some(p => p.name === newName)) {
-      alert(`${newName} is already added to phonebook`)
+  // 2.15 + 2.12: Lisätään hlö tai korvataan vanha
+  const addPerson = (event) => {
+    event.preventDefault()
+    const existing = persons.find(p => p.name === newName)
+
+    if (existing) {
+      // jos nimi löytyy jo(korvataank?)
+      if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
+        const updatedPerson = { ...existing, number: newNumber }
+        personsService
+          .update(existing.id, updatedPerson)
+          .then(returnedPerson => {
+            setPersons(persons.map(p => p.id !== existing.id ? p : returnedPerson))
+            setNewName('')
+            setNewNumber('')
+          })
+          .catch(error => {
+            alert(`Information of '${existing.name}' has already been removed from server`)
+            setPersons(persons.filter(p => p.id !== existing.id))
+          })
+      }
       return
     }
-    const person = { name: newName, number: newNumber, id: String(persons.length + 1) }
-    setPersons(persons.concat(person))
-    setNewName('')
-    setNewNumber('')
+
+    const personObject = { name: newName, number: newNumber }
+    personsService
+      .create(personObject)
+      .then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson))
+        setNewName('')
+        setNewNumber('')
+      })
   }
 
+  // 2.14: hlön poisto
+  const handleDelete = (id, name) => {
+    if (window.confirm(`Delete ${name}?`)) {
+      personsService
+        .remove(id)
+        .then(() => {
+          setPersons(persons.filter(p => p.id !== id))
+        })
+        .catch(error => {
+          alert(`Information of '${name}' was already removed from server`)
+          setPersons(persons.filter(p => p.id !== id))
+        })
+    }
+  }
+
+  // suodatus
   const personsToShow = filter
-    ? persons.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()))
+    ? persons.filter(p =>
+        p.name.toLowerCase().includes(filter.toLowerCase())
+      )
     : persons
 
   return (
@@ -51,7 +91,7 @@ const App = () => {
       />
 
       <h3>Numbers</h3>
-      <Persons persons={personsToShow} />
+      <Persons persons={personsToShow} handleDelete={handleDelete} />
     </div>
   )
 }
