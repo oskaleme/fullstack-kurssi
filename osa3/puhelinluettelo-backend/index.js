@@ -1,9 +1,20 @@
-
+//3.7 morgan
+const morgan = require('morgan')
 const express = require('express')
 const app = express()
 
-
 app.use(express.json())
+
+//3.8
+morgan.token('body', (req) => {
+  return (['POST','PUT','PATCH'].includes(req.method) && req.body && Object.keys(req.body).length)
+    ? JSON.stringify(req.body)
+    : ''
+})
+
+
+// 3.7 ja 3.8
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
 
 let persons = [
