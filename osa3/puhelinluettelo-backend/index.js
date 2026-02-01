@@ -4,7 +4,7 @@ const express = require('express')
 const app = express()
 
 app.use(express.json())
-
+app.use(express.static('dist'))
 //3.8
 morgan.token('body', (req) => {
   return (['POST','PUT','PATCH'].includes(req.method) && req.body && Object.keys(req.body).length)
