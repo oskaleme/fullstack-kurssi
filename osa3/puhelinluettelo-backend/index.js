@@ -20,12 +20,12 @@ morgan.token('body', (req) => {
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
 
-let persons = [
-  { id: "1", name: "Arto Hellas", number: "040-123456" },
-  { id: "2", name: "Ada Lovelace", number: "39-44-5323523" },
-  { id: "3", name: "Dan Abramov", number: "12-43-234345" },
-  { id: "4", name: "Mary Poppendieck", number: "39-23-6423122" }
-]
+//let persons = [
+//{ id: "1", name: "Arto Hellas", number: "040-123456" },
+//{ id: "2", name: "Ada Lovelace", number: "39-44-5323523" },
+//{ id: "3", name: "Dan Abramov", number: "12-43-234345" },
+//{ id: "4", name: "Mary Poppendieck", number: "39-23-6423122" }
+//]
 
 // 3.1 GET api/persons -> palauttaa koko listan
 app.get('/api/persons', (req, res, next) => {
@@ -87,9 +87,9 @@ app.put('/api/persons/:id', (req, res, next) => {
 
 // apufunktio id:n tekoon (3.5)
 
-const generateId = () => String(Math.floor(Math.random() * 1000000))
+//const generateId = () => String(Math.floor(Math.random() * 1000000))
 
-// 3.5 ja 3.6 lisää uusi henkilötieto 
+// 3.5 ja 3.6 lisää uusi henkilötieto
 app.post('/api/persons', (req, res, next) => {
   const body = req.body
 
@@ -124,6 +124,8 @@ const errorHandler = (error, req, res, next) => {
 
   if (error.name === 'CastError') {
     return res.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return res.status(400).json({ error: error.message })
   }
 
   next(error)

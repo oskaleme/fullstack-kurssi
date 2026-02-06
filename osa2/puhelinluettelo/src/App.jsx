@@ -51,6 +51,14 @@ const App = () => {
             setNewNumber('')
           })
           .catch(error => {
+            if (error.response && error.response.data && error.response.data.error) {
+              setErrorMessage(error.response.data.error)
+              setTimeout(() => {
+                setErrorMessage(null)
+              }, 5000)
+              return
+            }
+
             setErrorMessage(
               `Henkilö '${existing.name}' oli jo poistettu palvelimelta`
             )
@@ -79,7 +87,7 @@ const App = () => {
         setNewNumber('')
       })
       .catch(error => {
-        setErrorMessage('Lisäys epäonnistui')
+        setErrorMessage(error.response.data.error)
         setTimeout(() => {
           setErrorMessage(null)
         }, 5000)
