@@ -58,6 +58,50 @@ describe('addition of a new blog', () => {
     const titles = blogsAtEnd.map(b => b.title)
     assert(titles.includes('Test blog'))
   })
+})
+
+describe('deletion of a blog', () => {
+    test('succeeds with status code 204 if id is valid', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+      const blogToDelete = blogsAtStart[0]
+  
+      await api
+        .delete(`/api/blogs/${blogToDelete.id}`)
+        .expect(204)
+  
+      const blogsAtEnd = await helper.blogsInDb()
+  
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+  
+      const ids = blogsAtEnd.map(b => b.id)
+      assert(!ids.includes(blogToDelete.id))
+  })
+})
+
+describe('updating a blog', () => {
+    test('succeeds in updating likes', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+      const blogToUpdate = blogsAtStart[0]
+  
+      const updatedData = {
+        likes: blogToUpdate.likes + 1
+      }
+  
+      const result = await api
+        .put(`/api/blogs/${blogToUpdate.id}`)
+        .send(updatedData)
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
+  
+      assert.strictEqual(result.body.likes, blogToUpdate.likes + 1)
+  
+      const blogsAtEnd = await helper.blogsInDb()
+      const updatedBlog = blogsAtEnd.find(b => b.id === blogToUpdate.id)
+  
+      assert.strictEqual(updatedBlog.likes, blogToUpdate.likes + 1)
+    })
+})
+
 
   test('if likes is missing, it defaults to 0', async () => {
     const newBlog = {
@@ -74,6 +118,7 @@ describe('addition of a new blog', () => {
 
     assert.strictEqual(response.body.likes, 0)
   })
+
 
   test('fails with status code 400 if title is missing', async () => {
     const newBlog = {
@@ -106,7 +151,7 @@ describe('addition of a new blog', () => {
     const blogsAtEnd = await helper.blogsInDb()
     assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
   })
-})
+
 
 after(async () => {
   await mongoose.connection.close()
