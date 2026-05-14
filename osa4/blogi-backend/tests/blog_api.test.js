@@ -9,10 +9,34 @@ const api = supertest(app)
 
 const Blog = require('../models/blog')
 const helper = require('./test_helper')
+const jwt = require('jsonwebtoken')
+let token
+
+const bcrypt = require('bcrypt')
+const User = require('../models/user')
 
 beforeEach(async () => {
   await Blog.deleteMany({})
-  await Blog.insertMany(helper.initialBlogs)
+  await User.deleteMany({})
+
+  const passwordHash = await bcrypt.hash('sekret', 10)
+  const user = await new User({
+    username: 'root',
+    name: 'Superuser',
+    passwordHash
+  }).save()
+  
+  token = jwt.sign(
+    { username: user.username, id: user._id.toString() },
+    process.env.SECRET
+  )
+
+  const blogsWithUser = helper.initialBlogs.map(blog => ({
+    ...blog,
+    user: user._id
+  }))
+
+  await Blog.insertMany(blogsWithUser)
 })
 
 describe('when there is initially some blogs saved', () => {
@@ -48,6 +72,7 @@ describe('addition of a new blog', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -57,6 +82,20 @@ describe('addition of a new blog', () => {
 
     const titles = blogsAtEnd.map(b => b.title)
     assert(titles.includes('Test blog'))
+  })
+
+  test('fails with status code 401 if token is not provided', async () => {
+    const newBlog = {
+      title: 'No token',
+      author: 'Oskar',
+      url: 'https://example.com',
+      likes: 1
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
   })
 })
 
@@ -112,6 +151,7 @@ describe('updating a blog', () => {
 
     const response = await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -129,6 +169,7 @@ describe('updating a blog', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(400)
 
@@ -145,6 +186,7 @@ describe('updating a blog', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(400)
 
